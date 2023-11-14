@@ -47,6 +47,7 @@ const IScrollViewGesture: React.FC<PropsWithChildren<Props>> = (props) => {
       dataLength,
       overscrollEnabled,
       maxScrollDistancePerSwipe,
+      minScrollDistancePerSwipe,
     },
   } = React.useContext(CTX);
 
@@ -71,6 +72,7 @@ const IScrollViewGesture: React.FC<PropsWithChildren<Props>> = (props) => {
   const scrollEndVelocity = useSharedValue(0);
   const containerRef = useAnimatedRef<Animated.View>();
   const maxScrollDistancePerSwipeIsSet = typeof maxScrollDistancePerSwipe === "number";
+  const minScrollDistancePerSwipeIsSet = typeof minScrollDistancePerSwipe === "number";
 
   // Get the limit of the scroll.
   const getLimit = React.useCallback(() => {
@@ -122,7 +124,8 @@ const IScrollViewGesture: React.FC<PropsWithChildren<Props>> = (props) => {
       let finalTranslation: number = withDecay({ velocity, deceleration: 0.999 });
 
       // If the distance of the swipe exceeds the max scroll distance, keep the view at the current position
-      if (maxScrollDistancePerSwipeIsSet && Math.abs(scrollEndTranslation.value) > maxScrollDistancePerSwipe) {
+      if ((maxScrollDistancePerSwipeIsSet && Math.abs(scrollEndTranslation.value) > maxScrollDistancePerSwipe)
+        || (minScrollDistancePerSwipeIsSet && Math.abs(scrollEndTranslation.value) < minScrollDistancePerSwipe)) {
         finalTranslation = origin;
       }
       else {
@@ -178,8 +181,10 @@ const IScrollViewGesture: React.FC<PropsWithChildren<Props>> = (props) => {
       pagingEnabled,
       scrollEndVelocity.value,
       maxScrollDistancePerSwipe,
+      minScrollDistancePerSwipe,
       scrollEndTranslation.value,
       maxScrollDistancePerSwipeIsSet,
+      minScrollDistancePerSwipeIsSet,
     ],
   );
 
@@ -337,6 +342,10 @@ const IScrollViewGesture: React.FC<PropsWithChildren<Props>> = (props) => {
       const nextPage = Math.round((panOffset.value + maxScrollDistancePerSwipe * Math.sign(totalTranslation)) / size) * size;
       translation.value = withSpring(withProcessTranslation(nextPage), onScrollEnd);
     }
+    else if (minScrollDistancePerSwipeIsSet && Math.abs(totalTranslation) < minScrollDistancePerSwipe) {
+      const nextPage = Math.round((panOffset.value + minScrollDistancePerSwipe * Math.sign(totalTranslation)) / size) * size;
+      translation.value = withSpring(withProcessTranslation(nextPage), onScrollEnd);
+    }
     else {
       endWithSpring(onScrollEnd);
     }
@@ -353,7 +362,9 @@ const IScrollViewGesture: React.FC<PropsWithChildren<Props>> = (props) => {
     scrollEndVelocity,
     scrollEndTranslation,
     maxScrollDistancePerSwipeIsSet,
+    minScrollDistancePerSwipeIsSet,
     maxScrollDistancePerSwipe,
+    minScrollDistancePerSwipe,
     endWithSpring,
     withSpring,
     onScrollEnd,
